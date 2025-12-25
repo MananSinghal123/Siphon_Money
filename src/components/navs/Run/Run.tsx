@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Node, Edge } from '@xyflow/react';
 import StratDetails from "@/components/navs/Run/StratDetails";
+import { executeSwap } from "../../../lib/swap";
 import "./Run.css";
 
 interface RunProps {
@@ -38,6 +39,8 @@ export default function Run({
   const [selectedStrategy, setSelectedStrategy] = useState<{ name: string; nodes: Node[]; edges: Edge[] } | null>(null);
   const [showStrategyModal, setShowStrategyModal] = useState(false);
   const [publishedStrategies, setPublishedStrategies] = useState<Set<string>>(new Set());
+  const [recipientAddress, setRecipientAddress] = useState<string>('');
+
 
   // Load published strategies from localStorage
   useEffect(() => {
@@ -54,6 +57,14 @@ export default function Run({
     }
   }, []);
 
+  useEffect(() => {
+    const savedWallet = localStorage.getItem('siphon-connected-wallet');
+    if (savedWallet) {
+      const wallet = JSON.parse(savedWallet);
+      setRecipientAddress(wallet.address);
+    }
+  }, []);
+
   const onEditStrategy = useCallback((sceneName: string) => {
     const scene = savedScenes.find(s => s.name === sceneName);
     if (scene) {
@@ -64,16 +75,50 @@ export default function Run({
     }
   }, [savedScenes, setNodes, setEdges, setCurrentFileName, setViewMode]);
 
-  const startStrategy = useCallback((sceneName: string) => {
+  const startStrategy = useCallback(async (sceneName: string) => {
     const newRunning = new Map(runningStrategies);
     const existing = newRunning.get(sceneName);
-    newRunning.set(sceneName, { 
-      startTime: Date.now(), 
+    newRunning.set(sceneName, {
+      startTime: Date.now(),
       isRunning: true,
       loop: existing?.loop || false
     });
     setRunningStrategies(newRunning);
-  }, [runningStrategies, setRunningStrategies]);
+
+    const scene = savedScenes.find(s => s.name === sceneName);
+    if (scene) {
+      const depositNode = scene.nodes.find(n => n.data.type === 'deposit');
+      const swapNode = scene.nodes.find(n => n.data.type === 'swap');
+
+      if (depositNode && swapNode) {
+        const srcToken = depositNode.data.coin;
+        const amount = depositNode.data.amount;
+        const dstToken = swapNode.data.toCoin;
+
+        console.log("srcToken:", srcToken, typeof srcToken);
+        console.log("dstToken:", dstToken, typeof dstToken);
+        console.log("amount:", amount, typeof amount);
+
+
+        if (srcToken && amount && dstToken && recipientAddress) {
+          try {
+            const result = await executeSwap(srcToken as string, dstToken as string, amount as string, recipientAddress);
+            if (result.success) {
+              console.log('Swap successful:', result.data);
+            } else {
+              console.error('Swap failed:', result.error);
+            }
+          } catch (error) {
+            console.error('Error executing swap:', error);
+          }
+        } else {
+          console.error('Strategy is missing required data for execution.');
+        }
+      } else {
+        console.error('Strategy must contain at least one deposit and one swap node.');
+      }
+    }
+  }, [runningStrategies, setRunningStrategies, savedScenes, recipientAddress]);
 
   const stopStrategy = useCallback((sceneName: string) => {
     const newRunning = new Map(runningStrategies);
