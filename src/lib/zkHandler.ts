@@ -140,6 +140,7 @@ async function getOnChainLeaves(tokenAddress: string): Promise<bigint[]> {
 
   const leaves = decoded.map(d => BigInt(d.args._leaf));
   console.log("Parsed leaves count:", leaves.length);
+  console.log("Fetched on-chain leaves:", leaves); // Added log
 
   return leaves;
 }

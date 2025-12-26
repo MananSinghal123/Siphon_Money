@@ -102,7 +102,7 @@ export default function Run({
 
         if (srcToken && amount && dstToken && recipientAddress) {
           try {
-            const result = await executeSwap(srcToken as string, dstToken as string, amount as string, recipientAddress);
+            const result = await executeSwap(srcToken as string, dstToken as string, String(amount), recipientAddress);
             if (result.success) {
               console.log('Swap successful:', result.data);
             } else {
