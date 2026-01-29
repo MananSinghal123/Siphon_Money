@@ -1,3 +1,44 @@
+/* DAppNav Bar Flex Layout - logo, tabs, wallet aligned */
+.dappnav-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1100px;
+  margin: 2rem auto 0 auto;
+  padding: 0.5rem 2rem;
+  background: transparent;
+  border-radius: 12px;
+  z-index: 1200;
+  box-shadow: none;
+  position: relative;
+}
+
+.dappnav-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo {
+  position: fixed;
+  top: 3rem;
+  left: 2rem;
+  z-index: 1200;
+  pointer-events: auto;
+}
+
+.dappnav-bar .floating-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dappnav-bar .top-right-wallet-connector {
+  display: flex;
+  align-items: center;
+}
 /* SwapInterface.css - Common styles shared between modes */
 
 .siphon-container {
@@ -278,7 +319,7 @@
 .solflare-wallet-container {
   position: absolute;
   top: 1rem;
-  right: 5rem ;
+  right: 5rem;
 
   z-index: 1001;
   pointer-events: auto;
@@ -289,7 +330,7 @@
 /* Solflare Connect Button Styles */
 .solflare-connect-button {
   display: flex;
-  
+
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
@@ -313,7 +354,7 @@
   letter-spacing: 0.3px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   min-width: auto;
-  
+
   white-space: nowrap;
 }
 
@@ -331,7 +372,6 @@
 
 .solflare-connect-button .wallet-icon {
   font-size: 10px;
-  
 }
 
 .solflare-connect-button .connected-wallet {
@@ -435,7 +475,11 @@
   overflow: hidden;
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.8s ease, transform 0.8s ease, width 0.6s ease, height 0.6s ease;
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s ease,
+    width 0.6s ease,
+    height 0.6s ease;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
@@ -678,15 +722,21 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Absolute Balance Sidebar Styles */
 .absolute-balance-sidebar {
   position: fixed;
   top: 40%;
-  left: calc(35% - 150px - 140px); /* Center of screen - half swap width (500px/2) - gap */
+  left: calc(
+    35% - 150px - 140px
+  ); /* Center of screen - half swap width (500px/2) - gap */
   transform: translateY(-50%);
   width: 320px;
   height: auto;
@@ -887,11 +937,11 @@
   .dapp-sidebar {
     display: none !important;
   }
-  
+
   .dapp-main-content {
     padding: 1.5rem !important;
   }
-  
+
   .dapp-container {
     width: 100vw !important;
     height: calc(100vh - 100px) !important;
@@ -899,7 +949,7 @@
     display: flex !important;
     flex-direction: column !important;
   }
-  
+
   /* Marquee positioned over content */
   .dapp-marquee {
     position: absolute !important;
@@ -910,19 +960,19 @@
     z-index: 3000 !important;
     height: auto !important;
   }
-  
+
   .dapp-container {
     width: 100vw !important;
     max-width: 100vw !important;
     padding: 0 !important;
     margin: 0 !important;
   }
-  
+
   .dapp-presentation-overlay {
     padding-top: 50px !important;
     margin-top: 0 !important;
   }
-  
+
   .dapp-presentation-box {
     width: 95% !important;
     max-width: 100vw !important;
@@ -930,7 +980,7 @@
     margin-top: 0 !important;
     overflow-x: hidden !important;
   }
-  
+
   .dapp-main-content {
     max-width: 100% !important;
     overflow-x: hidden !important;
@@ -939,7 +989,7 @@
     display: flex !important;
     flex-direction: column !important;
   }
-  
+
   /* Feature cards as rows on mobile */
   .dapp-feature-cards {
     display: grid !important;
@@ -953,18 +1003,18 @@
     visibility: visible !important;
     opacity: 1 !important;
   }
-  
+
   .dapp-feature-cards > div {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
-  
+
   /* Darkpool action button - full width on mobile */
   .darkpool-action-buttons {
     flex-direction: column !important;
   }
-  
+
   .darkpool-action-buttons button {
     width: 100% !important;
   }
@@ -975,16 +1025,16 @@
     height: calc(100vh - 90px) !important;
     margin-top: 90px !important;
   }
-  
+
   .dapp-marquee {
     top: 0 !important;
   }
-  
+
   .dapp-presentation-overlay {
     padding-top: 35px !important;
     margin-top: 0 !important;
   }
-  
+
   .dapp-presentation-box {
     width: 98% !important;
     max-width: 100vw !important;
@@ -992,14 +1042,14 @@
     margin-top: 0 !important;
     overflow-x: hidden !important;
   }
-  
+
   .dapp-main-content {
     padding: 1rem !important;
     max-width: 100% !important;
     overflow-x: hidden !important;
     width: 100% !important;
   }
-  
+
   .dapp-feature-cards {
     display: grid !important;
     grid-template-columns: 1fr !important;
@@ -1011,18 +1061,18 @@
     visibility: visible !important;
     opacity: 1 !important;
   }
-  
+
   .dapp-feature-cards > div {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
   }
-  
+
   /* Darkpool action button - full width on mobile */
   .darkpool-action-buttons {
     flex-direction: column !important;
   }
-  
+
   .darkpool-action-buttons button {
     width: 100% !important;
   }

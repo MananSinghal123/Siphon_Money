@@ -7,21 +7,6 @@ import { WalletInfo, walletManager } from "@/lib/walletManager";
 // import styles from "../../hero.module.css";
 import "@/components/swap_face/SwapInterface.css";
 
-const marqueeKeyframes = `
-  @keyframes marquee {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  @keyframes fadeIn {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-  }
-  @keyframes fadeInUp {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
-  }
-`;
-
 export default function DarkPoolPage() {
   const [walletConnected, setWalletConnected] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState<WalletInfo | null>(
@@ -100,7 +85,6 @@ export default function DarkPoolPage() {
 
     checkWalletConnection();
   }, []);
-
   // Show loading while checking wallet connection
   const walletAddress =
     walletConnected && connectedWallet ? connectedWallet.address : null;

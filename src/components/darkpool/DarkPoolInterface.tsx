@@ -1,17 +1,17 @@
 // DarkPoolInterface.tsx - Main interface for dark pool trading
 "use client";
 
-import { useState, useCallback } from 'react';
-import { useUserLedger } from '@/hooks/useUserLedger';
-import InitializeLedger from './InitializeLedger';
-import BalanceDisplay from './BalanceDisplay';
-import DepositModal from './DepositModal';
-import WithdrawModal from './WithdrawModal';
-import OrderForm from './OrderForm';
-import OrderList from './OrderList';
-import ConnectButton from '../swap_face/extensions/ConnectButton';
-import { WalletInfo } from '@/lib/walletManager';
-import './darkpool.css';
+import { useState, useCallback, useEffect } from "react";
+import { useUserLedger } from "@/hooks/useUserLedger";
+import InitializeLedger from "./InitializeLedger";
+import BalanceDisplay from "./BalanceDisplay";
+import DepositModal from "./DepositModal";
+import WithdrawModal from "./WithdrawModal";
+import OrderForm from "./OrderForm";
+import OrderList from "./OrderList";
+import ConnectButton from "../swap_face/extensions/ConnectButton";
+import { WalletInfo } from "@/lib/walletManager";
+import "./darkpool.css";
 
 interface DarkPoolInterfaceProps {
   walletAddress: string | null;
@@ -20,33 +20,62 @@ interface DarkPoolInterfaceProps {
   onWalletConnected?: (wallet: WalletInfo) => void;
 }
 
-type View = 'overview' | 'trade' | 'history';
-type ModalType = 'deposit' | 'withdraw' | null;
+type View = "overview" | "trade" | "history";
+type ModalType = "deposit" | "withdraw" | null;
 
-export default function DarkPoolInterface({ 
+export default function DarkPoolInterface({
   walletAddress,
-  walletName = 'Wallet',
+  walletName = "Wallet",
   onDisconnect,
-  onWalletConnected
+  onWalletConnected,
 }: DarkPoolInterfaceProps) {
-  const { exists: ledgerExists, loading: checkingLedger, checkLedgerExists } = useUserLedger(walletAddress);
-  const [view, setView] = useState<View>('overview');
+  const {
+    exists: ledgerExists,
+    loading: checkingLedger,
+    checkLedgerExists,
+  } = useUserLedger(walletAddress);
+  const [view, setView] = useState<View>("overview");
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [balanceKey, setBalanceKey] = useState(0);
-  
+  const [isInit, setIsInit] = useState(false);
+
+  // Check for cached x25519 key on mount or when walletAddress changes
+  useEffect(() => {
+    if (!walletAddress) return;
+    const storageKey = `x25519_${walletAddress}`;
+    const cached = localStorage.getItem(storageKey);
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        // Check version and expiration (optional, but matches keyManagement.ts logic)
+        const KEY_VERSION = 1;
+        const CACHE_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+        if (
+          data.version === KEY_VERSION &&
+          Date.now() - data.timestamp <= CACHE_MAX_AGE
+        ) {
+          setIsInit(true);
+        }
+      } catch {}
+    }
+  }, [walletAddress]);
+
   // 🎭 DEMO MODE: Bypass initialization for testing/demo
   // Set to true to skip ledger check and go straight to main interface
   // TODO: Remove this before production launch
-  const DEMO_MODE = false;
-  
-  console.log('🎭 DEMO MODE:', DEMO_MODE ? 'ENABLED' : 'DISABLED');
+  // const isInit = false;
+
+  console.log("🎭 DEMO MODE:", isInit ? "ENABLED" : "DISABLED");
 
   // Mock signMessage function - replace with actual wallet adapter
-  const signMessage = useCallback(async (message: Uint8Array): Promise<Uint8Array> => {
-    // TODO: Implement actual message signing with wallet adapter
-    console.log('Signing message:', message);
-    return new Uint8Array(64).fill(0); // Mock signature
-  }, []);
+  const signMessage = useCallback(
+    async (message: Uint8Array): Promise<Uint8Array> => {
+      // TODO: Implement actual message signing with wallet adapter
+      console.log("Signing message:", message);
+      return new Uint8Array(64).fill(0); // Mock signature
+    },
+    [],
+  );
 
   const handleLedgerInitialized = () => {
     checkLedgerExists();
@@ -54,17 +83,17 @@ export default function DarkPoolInterface({
 
   const handleDepositSuccess = () => {
     setActiveModal(null);
-    setBalanceKey(prev => prev + 1); // Force balance refresh
+    setBalanceKey((prev) => prev + 1); // Force balance refresh
   };
 
   const handleWithdrawSuccess = () => {
     setActiveModal(null);
-    setBalanceKey(prev => prev + 1); // Force balance refresh
+    setBalanceKey((prev) => prev + 1); // Force balance refresh
   };
 
   const handleOrderSuccess = (orderId: string) => {
-    console.log('Order placed successfully:', orderId);
-    setBalanceKey(prev => prev + 1); // Force balance refresh
+    console.log("Order placed successfully:", orderId);
+    setBalanceKey((prev) => prev + 1); // Force balance refresh
   };
 
   // Not connected state - MUST connect wallet first
@@ -72,23 +101,19 @@ export default function DarkPoolInterface({
     return (
       <div className="darkpool-interface">
         <div className="welcome-screen">
-
-
           <div className="connect-button-wrapper">
-            <ConnectButton 
+            <ConnectButton
               className="welcome-connect-button"
               onConnected={onWalletConnected}
             />
           </div>
-
-      
         </div>
       </div>
     );
   }
 
   // Checking ledger state (skip in demo mode)
-  if (checkingLedger && !DEMO_MODE) {
+  if (checkingLedger && !isInit) {
     return (
       <div className="darkpool-interface">
         <div className="loading-screen">
@@ -100,7 +125,7 @@ export default function DarkPoolInterface({
   }
 
   // Need to initialize ledger (skip in demo mode)
-  if (!ledgerExists && !DEMO_MODE) {
+  if (!ledgerExists && !isInit) {
     return (
       <div className="darkpool-interface">
         <InitializeLedger
@@ -115,34 +140,39 @@ export default function DarkPoolInterface({
   return (
     <div className="darkpool-interface">
       {/* Demo Mode Banner */}
-      {DEMO_MODE && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          background: 'rgba(255, 165, 0, 0.15)',
-          borderBottom: '1px solid rgba(255, 165, 0, 0.4)',
-          padding: '0.5rem',
-          textAlign: 'center',
-          zIndex: 9999,
-          fontFamily: 'var(--font-source-code), monospace',
-          fontSize: '11px',
-          color: 'rgba(255, 165, 0, 0.95)',
-          fontWeight: '600',
-          letterSpacing: '0.5px',
-          textTransform: 'uppercase'
-        }}>
+      {isInit && (
+        <div
+          style={{
+            position: "relative",
+            top: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(255, 165, 0, 0.15)",
+            borderBottom: "1px solid rgba(255, 165, 0, 0.4)",
+            padding: "0.5rem",
+            textAlign: "center",
+            zIndex: 9999,
+            fontFamily: "var(--font-source-code), monospace",
+            fontSize: "11px",
+            color: "rgba(255, 165, 0, 0.95)",
+            fontWeight: "600",
+            letterSpacing: "0.5px",
+            textTransform: "uppercase",
+          }}
+        >
           🎭 Demo Mode Active - Bypassing Ledger Initialization
         </div>
       )}
-      
+
       {/* Header */}
-      <div className="darkpool-main-header" style={{ marginTop: DEMO_MODE ? '35px' : '40px' }}>
+      <div
+        className="darkpool-main-header"
+        style={{ marginTop: isInit ? "35px" : "40px" }}
+      >
         <div className="header-left">
           <h2>Dark Pool</h2>
         </div>
-        <div className="header-right">
+        {/* <div className="header-right">
           <div className="wallet-badge">
             <span className="wallet-name">{walletName}</span>
             <span className="wallet-address">
@@ -154,26 +184,26 @@ export default function DarkPoolInterface({
               Disconnect
             </button>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* Navigation Tabs */}
       <div className="view-tabs">
-        <button 
-          className={`tab ${view === 'overview' ? 'active' : ''}`}
-          onClick={() => setView('overview')}
+        <button
+          className={`tab ${view === "overview" ? "active" : ""}`}
+          onClick={() => setView("overview")}
         >
           Overview
         </button>
-        <button 
-          className={`tab ${view === 'trade' ? 'active' : ''}`}
-          onClick={() => setView('trade')}
+        <button
+          className={`tab ${view === "trade" ? "active" : ""}`}
+          onClick={() => setView("trade")}
         >
           Trade
         </button>
-        <button 
-          className={`tab ${view === 'history' ? 'active' : ''}`}
-          onClick={() => setView('history')}
+        <button
+          className={`tab ${view === "history" ? "active" : ""}`}
+          onClick={() => setView("history")}
         >
           Order History
         </button>
@@ -181,7 +211,7 @@ export default function DarkPoolInterface({
 
       {/* Content Area */}
       <div className="content-area">
-        {view === 'overview' && (
+        {view === "overview" && (
           <div className="overview-view">
             <div className="balance-section">
               <BalanceDisplay
@@ -194,8 +224,8 @@ export default function DarkPoolInterface({
             <div className="actions-section">
               <h3>Manage Funds</h3>
               <div className="action-buttons">
-                <button 
-                  onClick={() => setActiveModal('deposit')}
+                <button
+                  onClick={() => setActiveModal("deposit")}
                   className="action-card deposit"
                 >
                   <div className="action-content">
@@ -203,8 +233,8 @@ export default function DarkPoolInterface({
                     <p>Add tokens to your encrypted balance</p>
                   </div>
                 </button>
-                <button 
-                  onClick={() => setActiveModal('withdraw')}
+                <button
+                  onClick={() => setActiveModal("withdraw")}
                   className="action-card withdraw"
                 >
                   <div className="action-content">
@@ -232,7 +262,7 @@ export default function DarkPoolInterface({
           </div>
         )}
 
-        {view === 'trade' && (
+        {view === "trade" && (
           <div className="trade-view">
             <div className="trade-container">
               <div className="order-form-container">
@@ -276,7 +306,7 @@ export default function DarkPoolInterface({
           </div>
         )}
 
-        {view === 'history' && (
+        {view === "history" && (
           <div className="history-view">
             <OrderList walletAddress={walletAddress} />
           </div>
@@ -284,7 +314,7 @@ export default function DarkPoolInterface({
       </div>
 
       {/* Modals */}
-      {activeModal === 'deposit' && (
+      {activeModal === "deposit" && (
         <DepositModal
           walletAddress={walletAddress}
           onClose={() => setActiveModal(null)}
@@ -292,7 +322,7 @@ export default function DarkPoolInterface({
         />
       )}
 
-      {activeModal === 'withdraw' && (
+      {activeModal === "withdraw" && (
         <WithdrawModal
           walletAddress={walletAddress}
           onClose={() => setActiveModal(null)}
@@ -302,4 +332,3 @@ export default function DarkPoolInterface({
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import Solflare from '@solflare-wallet/sdk';
+import Solflare from "@solflare-wallet/sdk";
 
 export interface WalletInfo {
   id: string;
@@ -22,103 +22,143 @@ class WalletManager {
     try {
       const eth = (window as Window & { ethereum?: unknown })?.ethereum;
       if (!eth) {
-        return { success: false, error: 'MetaMask not detected. Please install MetaMask.' };
+        return {
+          success: false,
+          error: "MetaMask not detected. Please install MetaMask.",
+        };
       }
 
-      const accounts = await (eth as { request: (params: { method: string }) => Promise<string[]> }).request({ method: 'eth_requestAccounts' });
+      const accounts = await (
+        eth as { request: (params: { method: string }) => Promise<string[]> }
+      ).request({ method: "eth_requestAccounts" });
       if (accounts.length === 0) {
-        return { success: false, error: 'No accounts found' };
+        return { success: false, error: "No accounts found" };
       }
 
       const address = accounts[0];
       const wallet: WalletInfo = {
-        id: 'metamask',
-        name: 'MetaMask',
+        id: "metamask",
+        name: "MetaMask",
         address,
-        chain: 'EVM',
-        connected: true
+        chain: "EVM",
+        connected: true,
       };
 
-      this.connectedWallets.set('metamask', wallet);
+      this.connectedWallets.set("metamask", wallet);
       return { success: true, wallet };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to connect MetaMask' };
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to connect MetaMask",
+      };
     }
   }
 
   async connectSolana(): Promise<WalletConnectionResult> {
     try {
       // Check if Phantom wallet is available
-      const phantom = (window as Window & { solana?: { isPhantom?: boolean } })?.solana?.isPhantom;
+      const phantom = (window as Window & { solana?: { isPhantom?: boolean } })
+        ?.solana?.isPhantom;
       if (!phantom) {
-        return { success: false, error: 'Phantom wallet not detected. Please install Phantom.' };
+        return {
+          success: false,
+          error: "Phantom wallet not detected. Please install Phantom.",
+        };
       }
 
-        const response = await (window as unknown as { solana: { connect: () => Promise<{ publicKey: { toString: () => string } }> } }).solana.connect();
+      const response = await (
+        window as unknown as {
+          solana: {
+            connect: () => Promise<{ publicKey: { toString: () => string } }>;
+          };
+        }
+      ).solana.connect();
       const address = response.publicKey.toString();
 
       const wallet: WalletInfo = {
-        id: 'solana',
-        name: 'Solana',
+        id: "solana",
+        name: "Solana",
         address,
-        chain: 'Solana',
-        connected: true
+        chain: "Solana",
+        connected: true,
       };
 
-      this.connectedWallets.set('solana', wallet);
+      this.connectedWallets.set("solana", wallet);
       return { success: true, wallet };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to connect Solana wallet' };
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to connect Solana wallet",
+      };
     }
   }
 
   async connectPhantom(): Promise<WalletConnectionResult> {
     try {
       // Check if we're in a browser environment
-      if (typeof window === 'undefined') {
-        return { success: false, error: 'Phantom wallet can only be connected in a browser environment' };
+      if (typeof window === "undefined") {
+        return {
+          success: false,
+          error:
+            "Phantom wallet can only be connected in a browser environment",
+        };
       }
 
       // Wait a bit for window.solana to be available (in case extension is loading)
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       // Check if Phantom wallet is available - specifically check for Phantom
-      const windowWithSolana = window as Window & { 
-        solana?: { 
+      const windowWithSolana = window as Window & {
+        solana?: {
           isPhantom?: boolean;
           _phantom?: unknown; // Phantom-specific marker
           isConnected?: boolean;
           publicKey?: { toString: () => string };
-          connect: (options?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: { toString: () => string } }>; 
+          connect: (options?: {
+            onlyIfTrusted?: boolean;
+          }) => Promise<{ publicKey: { toString: () => string } }>;
           disconnect: () => Promise<void>;
           on: (event: string, handler: () => void) => void;
-        } 
+        };
       };
-      
+
       const solana = windowWithSolana.solana;
-      
+
       if (!solana) {
-        return { success: false, error: 'Phantom wallet not detected. Please install Phantom wallet extension from https://phantom.app' };
+        return {
+          success: false,
+          error:
+            "Phantom wallet not detected. Please install Phantom wallet extension from https://phantom.app",
+        };
       }
 
       // Double-check it's actually Phantom (check both isPhantom and _phantom marker)
-      const isPhantom = solana.isPhantom === true || solana._phantom !== undefined;
-      
+      const isPhantom =
+        solana.isPhantom === true || solana._phantom !== undefined;
+
       if (!isPhantom) {
-        return { success: false, error: 'Phantom wallet not detected. Another Solana wallet extension may be interfering. Please ensure Phantom is installed.' };
+        return {
+          success: false,
+          error:
+            "Phantom wallet not detected. Another Solana wallet extension may be interfering. Please ensure Phantom is installed.",
+        };
       }
 
       // Check if already connected
       if (solana.isConnected && solana.publicKey) {
         const address = solana.publicKey.toString();
         const wallet: WalletInfo = {
-          id: 'phantom',
-          name: 'Phantom',
+          id: "phantom",
+          name: "Phantom",
           address,
-          chain: 'Solana',
-          connected: true
+          chain: "Solana",
+          connected: true,
         };
-        this.connectedWallets.set('phantom', wallet);
+        this.connectedWallets.set("phantom", wallet);
         return { success: true, wallet };
       }
 
@@ -126,67 +166,106 @@ class WalletManager {
       let response: { publicKey: { toString: () => string } };
       try {
         // Ensure we're calling Phantom's connect, not another wallet's
-        if (!solana.connect || typeof solana.connect !== 'function') {
-          return { success: false, error: 'Phantom wallet connect method not available. Please refresh the page and try again.' };
+        if (!solana.connect || typeof solana.connect !== "function") {
+          return {
+            success: false,
+            error:
+              "Phantom wallet connect method not available. Please refresh the page and try again.",
+          };
         }
-        
+
         response = await solana.connect({ onlyIfTrusted: false });
       } catch (connectError: unknown) {
-        // User may have rejected the connection
-        const errorMessage = connectError instanceof Error ? connectError.message : String(connectError);
-        console.error('Phantom connect() error:', errorMessage);
-        
+        // Log the full error object for better debugging
+        console.error("Phantom connect() full error object:", connectError);
+        const errorMessage =
+          connectError instanceof Error
+            ? connectError.message
+            : JSON.stringify(connectError);
+
         // Check for common error patterns
-        if (errorMessage.includes('User rejected') || 
-            errorMessage.includes('User cancel') ||
-            errorMessage.includes('User cancelled') ||
-            errorMessage.includes('User declined')) {
-          return { success: false, error: 'Connection rejected. Please try again and approve the connection in Phantom.' };
+        if (
+          errorMessage.includes("User rejected") ||
+          errorMessage.includes("User cancel") ||
+          errorMessage.includes("User cancelled") ||
+          errorMessage.includes("User declined")
+        ) {
+          return {
+            success: false,
+            error:
+              "Connection rejected. Please try again and approve the connection in Phantom.",
+          };
         }
-        
+
         // If error mentions MetaMask, it's a conflict issue
-        if (errorMessage.toLowerCase().includes('metamask')) {
-          return { success: false, error: 'Wallet conflict detected. Please ensure only Phantom wallet is handling Solana connections, or try disabling MetaMask temporarily.' };
+        if (errorMessage.toLowerCase().includes("metamask")) {
+          return {
+            success: false,
+            error:
+              "Wallet conflict detected. Please ensure only Phantom wallet is handling Solana connections, or try disabling MetaMask temporarily.",
+          };
         }
-        
-        // Re-throw to be caught by outer catch
-        throw new Error(`Phantom connection failed: ${errorMessage}`);
+
+        // Re-throw to be caught by outer catch, include stack if available
+        throw new Error(
+          `Phantom connection failed: ` +
+            (connectError instanceof Error
+              ? connectError.stack || connectError.message
+              : JSON.stringify(connectError)),
+        );
       }
 
       if (!response || !response.publicKey) {
-        return { success: false, error: 'Failed to get public key from Phantom wallet' };
+        return {
+          success: false,
+          error: "Failed to get public key from Phantom wallet",
+        };
       }
 
       const address = response.publicKey.toString();
 
       const wallet: WalletInfo = {
-        id: 'phantom',
-        name: 'Phantom',
+        id: "phantom",
+        name: "Phantom",
         address,
-        chain: 'Solana',
-        connected: true
+        chain: "Solana",
+        connected: true,
       };
 
-      this.connectedWallets.set('phantom', wallet);
+      this.connectedWallets.set("phantom", wallet);
       return { success: true, wallet };
     } catch (error: unknown) {
-      console.error('Phantom connection error:', error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      console.error("Phantom connect() error object:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       // Filter out MetaMask-related errors if they appear
-      if (errorMessage.toLowerCase().includes('metamask')) {
-        return { success: false, error: 'Unable to connect Phantom. MetaMask may be interfering. Try refreshing the page or disabling MetaMask temporarily.' };
+      if (errorMessage.toLowerCase().includes("metamask")) {
+        return {
+          success: false,
+          error:
+            "Unable to connect Phantom. MetaMask may be interfering. Try refreshing the page or disabling MetaMask temporarily.",
+        };
       }
-      
+
       // Provide more helpful error messages
-      if (errorMessage.includes('User rejected') || 
-          errorMessage.includes('User cancel') ||
-          errorMessage.includes('User cancelled')) {
-        return { success: false, error: 'Connection was cancelled. Please try again and approve the connection in Phantom wallet.' };
+      if (
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("User cancel") ||
+        errorMessage.includes("User cancelled")
+      ) {
+        return {
+          success: false,
+          error:
+            "Connection was cancelled. Please try again and approve the connection in Phantom wallet.",
+        };
       }
-      
+
       // Generic error with Phantom branding
-      return { success: false, error: `Phantom wallet connection failed. ${errorMessage}` };
+      return {
+        success: false,
+        error: `Phantom wallet connection failed. ${errorMessage}`,
+      };
     }
   }
 
@@ -197,33 +276,42 @@ class WalletManager {
         this.solflareWallet = new Solflare();
       }
 
-      console.log('Solflare wallet instance:', this.solflareWallet);
+      console.log("Solflare wallet instance:", this.solflareWallet);
 
       // Connect to Solflare wallet
       await this.solflareWallet.connect();
-      
-      console.log('Solflare connected successfully');
-      console.log('Public key:', this.solflareWallet.publicKey);
+
+      console.log("Solflare connected successfully");
+      console.log("Public key:", this.solflareWallet.publicKey);
 
       if (!this.solflareWallet.publicKey) {
-        return { success: false, error: 'Failed to get public key from Solflare wallet' };
+        return {
+          success: false,
+          error: "Failed to get public key from Solflare wallet",
+        };
       }
 
       const address = this.solflareWallet.publicKey.toString();
 
       const wallet: WalletInfo = {
-        id: 'solflare',
-        name: 'Solflare',
+        id: "solflare",
+        name: "Solflare",
         address,
-        chain: 'Solana',
-        connected: true
+        chain: "Solana",
+        connected: true,
       };
 
-      this.connectedWallets.set('solflare', wallet);
+      this.connectedWallets.set("solflare", wallet);
       return { success: true, wallet };
     } catch (error: unknown) {
-      console.error('Solflare connection error:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to connect Solflare wallet' };
+      console.error("Solflare connection error:", error);
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to connect Solflare wallet",
+      };
     }
   }
 
@@ -232,27 +320,39 @@ class WalletManager {
       // Check if a Bitcoin wallet is available (e.g., Xverse, Unisat, etc.)
       const bitcoinWallet = (window as Window & { unisat?: unknown })?.unisat;
       if (!bitcoinWallet) {
-        return { success: false, error: 'Bitcoin wallet not detected. Please install a Bitcoin wallet like Unisat or Xverse.' };
+        return {
+          success: false,
+          error:
+            "Bitcoin wallet not detected. Please install a Bitcoin wallet like Unisat or Xverse.",
+        };
       }
 
-      const accounts = await (bitcoinWallet as { requestAccounts: () => Promise<string[]> }).requestAccounts();
+      const accounts = await (
+        bitcoinWallet as { requestAccounts: () => Promise<string[]> }
+      ).requestAccounts();
       if (accounts.length === 0) {
-        return { success: false, error: 'No Bitcoin accounts found' };
+        return { success: false, error: "No Bitcoin accounts found" };
       }
 
       const address = accounts[0];
       const wallet: WalletInfo = {
-        id: 'bitcoin',
-        name: 'Bitcoin',
+        id: "bitcoin",
+        name: "Bitcoin",
         address,
-        chain: 'Bitcoin',
-        connected: true
+        chain: "Bitcoin",
+        connected: true,
       };
 
-      this.connectedWallets.set('bitcoin', wallet);
+      this.connectedWallets.set("bitcoin", wallet);
       return { success: true, wallet };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to connect Bitcoin wallet' };
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to connect Bitcoin wallet",
+      };
     }
   }
 
@@ -260,51 +360,59 @@ class WalletManager {
     try {
       // Monero wallet connection would typically require a different approach
       // For now, we'll simulate a connection
-      const address = 'Monero address would be generated here';
-      
+      const address = "Monero address would be generated here";
+
       const wallet: WalletInfo = {
-        id: 'xmr',
-        name: 'Monero',
+        id: "xmr",
+        name: "Monero",
         address,
-        chain: 'Monero',
-        connected: true
+        chain: "Monero",
+        connected: true,
       };
 
-      this.connectedWallets.set('xmr', wallet);
+      this.connectedWallets.set("xmr", wallet);
       return { success: true, wallet };
     } catch (error: unknown) {
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to connect Monero wallet' };
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to connect Monero wallet",
+      };
     }
   }
 
   async connectWallet(walletId: string): Promise<WalletConnectionResult> {
     switch (walletId) {
-      case 'metamask':
+      case "metamask":
         return this.connectMetaMask();
-      case 'solana':
+      case "solana":
         return this.connectSolana();
-      case 'phantom':
+      case "phantom":
         return this.connectPhantom();
-      case 'solflare':
+      case "solflare":
         return this.connectSolflare();
-      case 'bitcoin':
+      case "bitcoin":
         return this.connectBitcoin();
-      case 'xmr':
+      case "xmr":
         return this.connectMonero();
       default:
-        return { success: false, error: 'Unknown wallet type' };
+        return { success: false, error: "Unknown wallet type" };
     }
   }
 
   disconnectWallet(walletId: string): void {
-    if (walletId === 'solflare' && this.solflareWallet) {
+    if (walletId === "solflare" && this.solflareWallet) {
       this.solflareWallet.disconnect();
-    } else if (walletId === 'phantom') {
+    } else if (walletId === "phantom") {
       // Disconnect Phantom wallet
-      const solana = (window as Window & { solana?: { disconnect: () => Promise<void> } })?.solana;
+      const solana = (
+        window as Window & { solana?: { disconnect: () => Promise<void> } }
+      )?.solana;
       if (solana && solana.disconnect) {
         solana.disconnect().catch((error) => {
-          console.error('Error disconnecting Phantom wallet:', error);
+          console.error("Error disconnecting Phantom wallet:", error);
         });
       }
     }
